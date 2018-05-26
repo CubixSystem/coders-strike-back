@@ -5,7 +5,8 @@
   "author": {
     "name": "Oleg Kurochkin"
   },
-  "description": "",
+  "description":
+    "My autopilot for https://www.codingame.com/multiplayer/bot-programming/coders-strike-back",
   "repository": {
     "type": "git",
     "url": "https://github.com/CubixSystem/coders-strike-back"
