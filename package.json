@@ -1,0 +1,29 @@
+{
+  "name": "coders-strike-back",
+  "private": true,
+  "version": "0.1.0",
+  "author": {
+    "name": "Oleg Kurochkin"
+  },
+  "description": "",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/CubixSystem/coders-strike-back"
+  },
+  "main": "./dist/bundle.js",
+  "scripts": {
+    "webpack": "webpack --mode=development",
+    "webpack:dev": "webpack --mode=development --watch",
+    "webpack:prod": "webpack --mode=production",
+    "lint": "./node_modules/.bin/tslint --project tsconfig.json",
+    "lint:fix": "./node_modules/.bin/tslint --project tsconfig.json --fix"
+  },
+  "devDependencies": {
+    "prettier": "^1.12.1",
+    "ts-loader": "^4.3.0",
+    "tslint": "^5.10.0",
+    "typescript": "^2.8.3",
+    "webpack": "^4.9.1",
+    "webpack-cli": "^2.1.4"
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "compilerOptions": {
+    "lib": ["es2016"],
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "pretty": true,
+    "strict": true,
+    "target": "es3",
+    "outDir": "./dist",
+    "baseUrl": "./",
+    "paths": {
+      // "@models": ["modules/modelAssociator"]
+    }
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": ["node_modules"]
+}
