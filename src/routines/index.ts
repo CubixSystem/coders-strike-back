@@ -3,3 +3,4 @@ export * from './MoveRoutine';
 export * from './CheckpointRoutine';
 export * from './RotateToCheckpointRoutine';
 export * from './Routine';
+export * from './routines-registry';

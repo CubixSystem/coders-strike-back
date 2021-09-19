@@ -7,7 +7,7 @@ export class Vector {
   }
 
   public static toDegrees(angleInRad: number): number {
-    return Math.round(angleInRad * 180 / Math.PI);
+    return Math.round((angleInRad * 180) / Math.PI);
   }
 
   public x: number;

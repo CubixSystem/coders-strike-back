@@ -1,2 +1,2 @@
-export * from './podModels';
+export * from './pods';
 export { MapModel } from './MapModel';

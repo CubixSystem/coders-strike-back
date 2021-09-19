@@ -1,13 +1,13 @@
 import {
   ExploredMapDecisionMaker,
   UnknownMapDecisionMaker,
-} from './decisionMakers';
-import { FrameData } from './FrameData';
+} from './decision-makers';
+import { GameTickInputData } from './GameTickInputData';
 import { MapModel } from './models';
 import { PlayerPodModel } from './models';
 
 export class App {
-  protected frameData?: FrameData;
+  protected gameTickInputData = new GameTickInputData();
   protected playerPodModel = new PlayerPodModel();
   protected playerMapModel = new MapModel();
   protected unknownMapDecisionMaker = new UnknownMapDecisionMaker();
@@ -21,36 +21,36 @@ export class App {
     while (true) {
       startTime = Date.now();
 
-      {
-        const data = {
-          firstLine: readline().split(' '),
-          secondLine: readline().split(' '),
-        };
-        this.frameData
-          ? this.frameData.onGameTick(data)
-          : (this.frameData = new FrameData(data));
-      }
+      this.gameTickInputData.onGameTick({
+        firstLine: readline().split(' '),
+        secondLine: readline().split(' '),
+      });
 
-      this.playerPodModel.onGameTick({ frameData: this.frameData });
+      this.playerPodModel.onGameTick({
+        inputData: this.gameTickInputData,
+      });
 
       this.playerMapModel.onGameTick({
-        frameData: this.frameData,
+        inputData: this.gameTickInputData,
         podModel: this.playerPodModel,
       });
 
       {
         const data = {
-          frameData: this.frameData,
+          inputData: this.gameTickInputData,
           playerMapModel: this.playerMapModel,
           playerPodModel: this.playerPodModel,
         };
-        this.playerMapModel.isExplored
-          ? this.exploredMapDecisionMaker.onGameTick(data)
-          : this.unknownMapDecisionMaker.onGameTick(data);
+
+        this.unknownMapDecisionMaker.onGameTick(data);
+        // this.playerMapModel.isMapExplored
+        //   ? this.exploredMapDecisionMaker.onGameTick(data)
+        //   : this.unknownMapDecisionMaker.onGameTick(data);
       }
 
       endTime = Date.now();
       tickTime = endTime - startTime;
+
       printErr('Tick time:', tickTime);
     }
   }

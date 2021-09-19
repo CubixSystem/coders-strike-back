@@ -1,8 +1,8 @@
-import { FrameData } from './FrameData';
+import { GameTickInputData } from './GameTickInputData';
 import { MapModel, PlayerPodModel } from './models';
 
 export interface GameTick {
   playerMapModel: MapModel;
   playerPodModel: PlayerPodModel;
-  frameData: FrameData;
+  inputData: GameTickInputData;
 }

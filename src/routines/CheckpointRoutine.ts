@@ -1,26 +1,30 @@
 import { GameTick } from '../GameTick';
-import { Routine, RoutinePriority, RoutineResult } from './Routine';
+import { Routine, RoutineResult } from './Routine';
+import { actionsRegistry as ar } from '../actions';
 
 export class CheckpointRoutine extends Routine {
-  public readonly duration = 1;
-  public readonly priority = RoutinePriority.NORMAL;
+  public execute({ inputData }: GameTick): RoutineResult {
+    const targetPointActionResult = ar.rotateToPointAction.execute({
+      targetPoint: inputData.nextCheckpointCoordinates,
+    });
 
-  public execute({ frameData }: GameTick): RoutineResult {
+    const thrustActionResult = ar.moveAction.execute({ thrustValue: 0 });
+
     return {
-      id: this.constructor.name,
-      targetPoint: frameData.nextCheckpoint,
-      thrustValue: 0,
+      id: 'CheckpointRoutine',
+      targetPointActionResult,
+      thrustActionResult,
     };
   }
 
   public isAvaliable({
-    playerMapModel: {
-      isPassCheckpoint,
-      angleBetweenNextCheckpointAndMovementVector,
+    playerMapModel: { isCheckpointReached },
+    playerPodModel: {
+      currentTickData: { angleBetweenNextCheckpointAndMovementVector },
     },
   }: GameTick): boolean {
     return (
-      isPassCheckpoint && angleBetweenNextCheckpointAndMovementVector! > 60
+      isCheckpointReached && angleBetweenNextCheckpointAndMovementVector > 60
     );
   }
 }

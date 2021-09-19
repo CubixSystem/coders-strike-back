@@ -1,15 +1,19 @@
 import { GameTick } from '../GameTick';
-import { Routine, RoutinePriority, RoutineResult } from './Routine';
+import { Routine, RoutineResult } from './Routine';
+import { actionsRegistry as ar } from '../actions';
 
 export class MoveRoutine extends Routine {
-  public readonly duration = 1;
-  public readonly priority = RoutinePriority.LOW;
+  public execute({ inputData }: GameTick): RoutineResult {
+    const targetPointActionResult = ar.rotateToPointAction.execute({
+      targetPoint: inputData.nextCheckpointCoordinates,
+    });
 
-  public execute({ frameData }: GameTick): RoutineResult {
+    const thrustActionResult = ar.moveAction.execute({ thrustValue: 100 });
+
     return {
-      id: this.constructor.name,
-      targetPoint: frameData.nextCheckpoint,
-      thrustValue: 100,
+      id: 'MoveRoutine',
+      targetPointActionResult,
+      thrustActionResult,
     };
   }
 

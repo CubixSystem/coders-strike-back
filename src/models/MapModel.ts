@@ -1,201 +1,154 @@
-import { FrameData } from '../FrameData';
+import { GameTickInputData } from '../GameTickInputData';
 import { Point } from '../Point';
 import { Vector } from '../Vector';
-import { PodModel } from './podModels/PodModel';
+import { PodModel } from './pods/PodModel';
 
 interface TickData {
   podModel: PodModel;
-  frameData: FrameData;
+  inputData: GameTickInputData;
 }
 
-interface LastTickDataParams {
-  nextCheckpoint: Point;
+interface MapDataParams {
+  nextCheckpointCoordinates: Point;
 }
 
-class LastTickData {
-  public nextCheckpoint: Point;
+class MapData {
+  public nextCheckpointCoordinates: Point;
 
-  constructor(params: LastTickDataParams) {
-    this.nextCheckpoint = params.nextCheckpoint;
+  constructor(params: MapDataParams) {
+    this.nextCheckpointCoordinates = params.nextCheckpointCoordinates;
   }
 }
 
 export class MapModel {
-  public isExplored: boolean = false;
-  public isPassCheckpoint: boolean = false;
-  public checkpointsInLap: number = 0;
+  public isMapExplored = false;
+  public isCheckpointReached = false;
+  public checkpointsInLap = 0;
   public checkPoints: Point[] = [];
 
-  public nextCheckpoint?: Point;
-  public distToNextCheckpoint?: number;
-  public angleToNextCheckpoint?: number;
-  public podCoordinates?: Point;
-  public nextNextCheckpoint?: Point;
-  public angleBetweenNextCheckpointAndMovementVector?: number;
-  public angleBetweenSegments?: number;
+  public nextCheckpointCoordinates = new Point(0, 0);
+  public nextCheckpointDistance = 0;
+  public nextCheckpointAngle = 0;
+  public podCoordinates = new Point(0, 0);
+  public nextNextCheckpoint = new Point(0, 0);
+  public angleBetweenSegments = 0;
 
-  protected lastTickData?: LastTickData;
+  protected previousTickData = new MapData({
+    nextCheckpointCoordinates: new Point(0, 0),
+  });
+
+  protected currentTickData = new MapData({
+    nextCheckpointCoordinates: new Point(0, 0),
+  });
 
   public onGameTick(newTickData: TickData): void {
-    const isFirstGameTick = newTickData.frameData.isFirstGameTick;
+    if (newTickData.inputData.isFirstGameTick()) {
+      this.init(newTickData);
+    }
 
-    this.updateLastTickData(isFirstGameTick);
+    this.updatePreviousTickData();
     this.updateCurrentTickData(newTickData);
   }
 
-  protected updateLastTickData(isFirstGameTick: boolean): void {
-    if (isFirstGameTick) {
-      return;
-    }
-
-    if (this.nextCheckpoint === undefined) {
-      throw new Error('nextCheckpoint not defined');
-    }
-
-    if (!this.lastTickData) {
-      this.lastTickData = new LastTickData({
-        nextCheckpoint: this.nextCheckpoint,
-      });
-      return;
-    }
-
-    this.lastTickData.nextCheckpoint = this.nextCheckpoint;
+  protected init({ podModel }: TickData) {
+    const podCoordinates = podModel.currentTickData.coordinates;
+    this.podCoordinates.x = podCoordinates.x;
+    this.podCoordinates.y = podCoordinates.y;
   }
 
-  protected updateCurrentTickData({ frameData, podModel }: TickData): void {
-    this.nextCheckpoint = frameData.nextCheckpoint;
-    this.distToNextCheckpoint = frameData.distToNextCheckpoint;
-    this.angleToNextCheckpoint = frameData.angleToNextCheckpoint;
-    this.podCoordinates = podModel.coordinates;
+  protected updatePreviousTickData(): void {
+    const { previousTickData: previousTickData } = this;
 
-    if (frameData.isFirstGameTick) {
-      return;
+    previousTickData.nextCheckpointCoordinates.x =
+      this.nextCheckpointCoordinates.x;
+    previousTickData.nextCheckpointCoordinates.y =
+      this.nextCheckpointCoordinates.y;
+  }
+
+  protected updateCurrentTickData({ inputData, podModel }: TickData): void {
+    this.nextCheckpointCoordinates.x = inputData.nextCheckpointCoordinates.x;
+    this.nextCheckpointCoordinates.y = inputData.nextCheckpointCoordinates.y;
+
+    this.nextCheckpointDistance = inputData.nextCheckpointDistance;
+    this.nextCheckpointAngle = inputData.nextCheckpointAngle;
+
+    const podCoordinates = podModel.currentTickData.coordinates;
+    this.podCoordinates.x = podCoordinates.x;
+    this.podCoordinates.y = podCoordinates.y;
+
+    this.isCheckpointReached = this.isReachCheckpointInCurrentTick();
+
+    if (this.isCheckpointReached) {
+      this.onCheckpointReached();
     }
 
-    this.isPassCheckpoint = this.checkCheckpointPass();
-    this.angleBetweenNextCheckpointAndMovementVector = this.getAngleBetweenNextCheckpointAndMovementVector(
-      podModel,
-    );
-
-    if (this.isPassCheckpoint) {
-      this.onPassCheckpoint();
-    }
-
-    if (this.isExplored) {
+    if (this.isMapExplored) {
       this.angleBetweenSegments = this.getAngleBetweenPathSegments();
     }
 
-    if (frameData.isFirstGameTick) {
-      this.checkPoints.push(this.nextCheckpoint);
+    if (inputData.isFirstGameTick()) {
+      this.checkPoints.push(this.nextCheckpointCoordinates);
       return;
     }
   }
 
-  protected onPassCheckpoint(): void {
-    if (this.isExplored) {
+  protected onCheckpointReached(): void {
+    if (this.isMapExplored) {
       this.updateNextNextCheckpoint();
+      return;
+    }
+
+    const isCheckpointKnown = this.checkPoints.findIndex((point) => {
+      return Point.isEqual(point, this.nextCheckpointCoordinates);
+    });
+
+    if (isCheckpointKnown === -1) {
+      this.checkPoints.push(this.nextCheckpointCoordinates);
     } else {
-      if (this.nextCheckpoint === undefined) {
-        throw new Error('nextCheckpoint not defined');
-      }
-
-      const isExist = this.checkPoints.findIndex(point => {
-        if (this.nextCheckpoint === undefined) {
-          throw new Error('nextCheckpoint not defined');
-        }
-        return Point.isEqual(point, this.nextCheckpoint);
-      });
-
-      if (isExist === -1) {
-        this.checkPoints.push(this.nextCheckpoint);
-      } else {
-        this.onExplored();
-      }
+      this.onMapExplored();
     }
   }
 
-  protected onExplored(): void {
-    this.isExplored = true;
+  protected onMapExplored(): void {
+    this.isMapExplored = true;
     this.checkpointsInLap = this.checkPoints.length;
     this.updateNextNextCheckpoint();
   }
 
   protected updateNextNextCheckpoint(): void {
-    const targetCheckpointIndex = this.checkPoints.findIndex(point => {
-      if (this.nextCheckpoint === undefined) {
-        throw new Error('nextCheckpoint not defined');
-      }
-      return Point.isEqual(point, this.nextCheckpoint);
+    const targetCheckpointIndex = this.checkPoints.findIndex((point) => {
+      return Point.isEqual(point, this.nextCheckpointCoordinates);
     });
 
     this.nextNextCheckpoint =
       targetCheckpointIndex === this.checkPoints.length - 1
-        ? this.checkPoints[0]
-        : this.checkPoints[targetCheckpointIndex + 1];
+        ? this.checkPoints[0]!
+        : this.checkPoints[targetCheckpointIndex + 1]!;
   }
 
-  protected checkCheckpointPass(): boolean {
-    if (this.nextCheckpoint === undefined) {
-      throw new Error('nextCheckpoint not defined');
-    }
-
-    if (this.lastTickData === undefined) {
-      throw new Error('lastTickData not defined');
-    }
-
+  protected isReachCheckpointInCurrentTick(): boolean {
     return !Point.isEqual(
-      this.nextCheckpoint,
-      this.lastTickData.nextCheckpoint,
+      this.nextCheckpointCoordinates,
+      this.previousTickData.nextCheckpointCoordinates,
     );
-  }
-
-  protected getAngleBetweenNextCheckpointAndMovementVector(
-    podModel: PodModel,
-  ): number {
-    if (this.nextCheckpoint === undefined) {
-      throw new Error('nextCheckpoint not defined');
-    }
-
-    if (this.podCoordinates === undefined) {
-      throw new Error('podCoordinates not defined');
-    }
-
-    const targetVector = new Vector(
-      this.nextCheckpoint.x - this.podCoordinates.x,
-      this.nextCheckpoint.y - this.podCoordinates.y,
-    );
-    const angleInRad = Vector.getAngleBetween(
-      podModel.movementVector,
-      targetVector,
-    );
-    return Vector.toDegrees(angleInRad);
   }
 
   protected getAngleBetweenPathSegments(): number {
-    if (this.nextCheckpoint === undefined) {
-      throw new Error('nextCheckpoint not defined');
-    }
-
-    if (this.podCoordinates === undefined) {
-      throw new Error('podCoordinates not defined');
-    }
-
-    if (this.nextNextCheckpoint === undefined) {
-      throw new Error('nextNextCheckpoint not defined');
-    }
-
     const vectorToPod = new Vector(
-      this.nextCheckpoint.x - this.podCoordinates.x,
-      this.nextCheckpoint.y - this.podCoordinates.y,
+      this.nextCheckpointCoordinates.x - this.podCoordinates.x,
+      this.nextCheckpointCoordinates.y - this.podCoordinates.y,
     );
+
     const vectorToNextNextCheckpoint = new Vector(
-      this.nextCheckpoint.x - this.nextNextCheckpoint.x,
-      this.nextCheckpoint.y - this.nextNextCheckpoint.y,
+      this.nextCheckpointCoordinates.x - this.nextNextCheckpoint.x,
+      this.nextCheckpointCoordinates.y - this.nextNextCheckpoint.y,
     );
+
     const angleInRad = Vector.getAngleBetween(
       vectorToPod,
       vectorToNextNextCheckpoint,
     );
+
     return Vector.toDegrees(angleInRad);
   }
 }
