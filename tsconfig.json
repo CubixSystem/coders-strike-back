@@ -1,18 +1,19 @@
 {
   "compilerOptions": {
-    "lib": ["es2016"],
-    "module": "commonjs",
-    "moduleResolution": "node",
+    "lib": ["ES2021"],
+    "module": "CommonJS",
+    "moduleResolution": "Node",
     "noUnusedLocals": true,
     "noUnusedParameters": true,
-    "pretty": true,
+    "noUncheckedIndexedAccess": true,
+    "noPropertyAccessFromIndexSignature": true,
     "strict": true,
-    "target": "es3",
+    "target": "ES6",
     "outDir": "./dist",
     "baseUrl": "./",
-    "paths": {
-      // "@models": ["modules/modelAssociator"]
-    }
+    "esModuleInterop": true,
+    "exactOptionalPropertyTypes": true,
+    "sourceMap": true
   },
   "include": ["src/**/*.ts"],
   "exclude": ["node_modules"]
